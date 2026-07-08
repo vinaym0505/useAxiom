@@ -1,6 +1,6 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
-import { prisma } from '@useaxiom/database';
-import { IProjectCreateDto, IProjectUpdateDto } from '@useaxiom/types';
+import { prisma, Prisma } from '@useaxiom/database';
+import type { IProjectCreateDto, IProjectUpdateDto } from '@useaxiom/types';
 
 @Injectable()
 export class ProjectService {
@@ -23,7 +23,7 @@ export class ProjectService {
     const limit = pagination?.limit ?? 20;
     const skip = (page - 1) * limit;
 
-    const where: any = {
+    const where: Prisma.ProjectWhereInput = {
       organization_id: organizationId,
       deleted_at: null,
     };
@@ -73,8 +73,12 @@ export class ProjectService {
   ) {
     await this.getProjectById(organizationId, id);
 
-    const data: any = { ...updateData };
-    if (updateData.target_deadline) {
+    const data: Prisma.ProjectUpdateInput = {};
+    if (updateData.name !== undefined) data.name = updateData.name;
+    if (updateData.objective !== undefined)
+      data.objective = updateData.objective;
+    if (updateData.status !== undefined) data.status = updateData.status;
+    if (updateData.target_deadline !== undefined) {
       data.target_deadline = new Date(updateData.target_deadline);
     }
 
@@ -103,7 +107,6 @@ export class ProjectService {
       data: { status: 'ACTIVE' },
     });
 
-    // Cascade: change all PROPOSED tasks inside this project to PENDING status
     await prisma.task.updateMany({
       where: {
         project_id: id,

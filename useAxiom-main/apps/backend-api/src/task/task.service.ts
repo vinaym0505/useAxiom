@@ -3,7 +3,7 @@ import {
   NotFoundException,
   BadRequestException,
 } from '@nestjs/common';
-import { prisma } from '@useaxiom/database';
+import { prisma, Prisma } from '@useaxiom/database';
 import type { ITaskCreateDto, ITaskUpdateDto } from '@useaxiom/types';
 
 @Injectable()
@@ -57,7 +57,7 @@ export class TaskService {
         milestone_id: taskData.milestone_id || null,
         title: taskData.title,
         description: taskData.description,
-        estimated_hours: taskData.estimated_hours,
+        estimated_hours: new Prisma.Decimal(taskData.estimated_hours),
         created_by_ai: taskData.created_by_ai ?? false,
         status: 'PROPOSED',
       },
@@ -78,7 +78,7 @@ export class TaskService {
     const limit = filter?.limit ?? 20;
     const skip = (page - 1) * limit;
 
-    const where: any = {
+    const where: Prisma.TaskWhereInput = {
       organization_id: organizationId,
       deleted_at: null,
     };
@@ -141,10 +141,22 @@ export class TaskService {
   ) {
     const task = await this.getTaskById(organizationId, id);
 
-    const data: any = { ...updateData };
-
     if (updateData.status) {
       this.validateStatusTransition(task.status, updateData.status);
+    }
+
+    const data: Prisma.TaskUpdateInput = {};
+    if (updateData.title !== undefined) data.title = updateData.title;
+    if (updateData.description !== undefined)
+      data.description = updateData.description;
+    if (updateData.status !== undefined) data.status = updateData.status;
+    if (updateData.estimated_hours !== undefined) {
+      data.estimated_hours = new Prisma.Decimal(updateData.estimated_hours);
+    }
+    if (updateData.milestone_id !== undefined) {
+      data.milestone = updateData.milestone_id
+        ? { connect: { id: updateData.milestone_id } }
+        : { disconnect: true };
     }
 
     return prisma.task.update({
@@ -175,9 +187,11 @@ export class TaskService {
 
     this.validateStatusTransition(task.status, 'PENDING');
 
-    const updatePayload: any = { status: 'PENDING' };
+    const updatePayload: Prisma.TaskUpdateInput = { status: 'PENDING' };
     if (overrideData?.estimated_hours_override !== undefined) {
-      updatePayload.estimated_hours = overrideData.estimated_hours_override;
+      updatePayload.estimated_hours = new Prisma.Decimal(
+        overrideData.estimated_hours_override,
+      );
     }
 
     if (overrideData?.assignee_id_override) {
