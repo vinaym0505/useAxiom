@@ -2,5 +2,12 @@
   "name": "@useaxiom/ai-providers",
   "version": "1.0.0",
   "private": true,
-  "main": "index.ts"
+  "main": "index.ts",
+  "dependencies": {
+    "openai": "^4.0.0"
+  },
+  "devDependencies": {
+    "@types/node": "^20.0.0",
+    "@useaxiom/config": "workspace:*"
+  }
 }
