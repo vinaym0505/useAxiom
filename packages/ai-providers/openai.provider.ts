@@ -17,16 +17,35 @@ export class OpenAiProvider implements ILlmProvider {
   }
 
   async generateResponse(messages: Message[], config?: LLMConfig): Promise<LLMResponse> {
+    const tools = config?.tools?.map((t) => ({
+      type: 'function' as const,
+      function: {
+        name: t.name,
+        description: t.description,
+        parameters: t.parameters
+      }
+    }));
+
     const response = await this.client.chat.completions.create({
       model: config?.model || 'gpt-4o-mini',
       messages: messages as any,
       temperature: config?.temperature,
       max_tokens: config?.maxTokens,
-      top_p: config?.topP
+      top_p: config?.topP,
+      tools: tools && tools.length > 0 ? tools : undefined
     });
 
+    const choice = response.choices[0]?.message;
     return {
-      content: response.choices[0]?.message?.content || '',
+      content: choice?.content || '',
+      toolCalls: choice?.tool_calls?.map((tc) => ({
+        id: tc.id,
+        type: 'function',
+        function: {
+          name: tc.function.name,
+          arguments: tc.function.arguments
+        }
+      })),
       raw: response,
       usage: response.usage
         ? {

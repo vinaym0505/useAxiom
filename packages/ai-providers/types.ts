@@ -4,6 +4,8 @@ export interface Message {
   role: MessageRole;
   content: string;
   name?: string;
+  tool_call_id?: string;
+  tool_calls?: any[];
 }
 
 export interface LLMConfig {
@@ -12,6 +14,7 @@ export interface LLMConfig {
   topP?: number;
   model?: string;
   responseFormat?: 'text' | 'json';
+  tools?: any[]; // Array of IAiTool objects
 }
 
 export interface LLMRequest {
@@ -21,6 +24,14 @@ export interface LLMRequest {
 
 export interface LLMResponse {
   content: string;
+  toolCalls?: Array<{
+    id: string;
+    type: 'function';
+    function: {
+      name: string;
+      arguments: string; // JSON string
+    };
+  }>;
   raw?: any;
   usage?: {
     promptTokens: number;

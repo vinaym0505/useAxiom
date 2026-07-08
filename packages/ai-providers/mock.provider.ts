@@ -5,6 +5,100 @@ export class MockLlmProvider implements ILlmProvider {
   name = 'mock';
 
   async generateResponse(messages: Message[], config?: LLMConfig): Promise<LLMResponse> {
+    const lastMessage = messages[messages.length - 1];
+
+    // If the last message is a tool response, finish the loop with a summary text
+    if (lastMessage?.role === 'tool') {
+      return {
+        content: `Tool executed successfully. Result: ${lastMessage.content}`,
+        usage: { promptTokens: 0, completionTokens: 0, totalTokens: 0 }
+      };
+    }
+
+    // Check if tools are configured and trigger appropriate mock tool call
+    if (config?.tools && config.tools.length > 0) {
+      const prompt = lastMessage?.content.toLowerCase() || '';
+
+      if (prompt.includes('workload')) {
+        return {
+          content: '',
+          toolCalls: [
+            {
+              id: 'call-w1',
+              type: 'function',
+              function: { name: 'get_employee_workloads', arguments: '{}' }
+            }
+          ],
+          usage: { promptTokens: 0, completionTokens: 0, totalTokens: 0 }
+        };
+      }
+
+      if (prompt.includes('skill')) {
+        return {
+          content: '',
+          toolCalls: [
+            {
+              id: 'call-s1',
+              type: 'function',
+              function: { name: 'get_employee_skills', arguments: '{}' }
+            }
+          ],
+          usage: { promptTokens: 0, completionTokens: 0, totalTokens: 0 }
+        };
+      }
+
+      if (prompt.includes('mark') || prompt.includes('update')) {
+        return {
+          content: '',
+          toolCalls: [
+            {
+              id: 'call-u1',
+              type: 'function',
+              function: {
+                name: 'update_task_status',
+                arguments: '{"taskId":"task-102","status":"COMPLETED"}'
+              }
+            }
+          ],
+          usage: { promptTokens: 0, completionTokens: 0, totalTokens: 0 }
+        };
+      }
+
+      if (prompt.includes('send') || prompt.includes('whatsapp')) {
+        return {
+          content: '',
+          toolCalls: [
+            {
+              id: 'call-m1',
+              type: 'function',
+              function: {
+                name: 'send_whatsapp_message',
+                arguments: '{"employeeId":"dev-3","message":"Hello from agent!"}'
+              }
+            }
+          ],
+          usage: { promptTokens: 0, completionTokens: 0, totalTokens: 0 }
+        };
+      }
+
+      if (prompt.includes('flag') || prompt.includes('risk')) {
+        return {
+          content: '',
+          toolCalls: [
+            {
+              id: 'call-r1',
+              type: 'function',
+              function: {
+                name: 'flag_project_at_risk',
+                arguments: '{"projectId":"project-99","riskScore":85,"reasoning":"Critical blocker."}'
+              }
+            }
+          ],
+          usage: { promptTokens: 0, completionTokens: 0, totalTokens: 0 }
+        };
+      }
+    }
+
     return {
       content: '[Mock Text Output] Successful mock LLM response.',
       usage: { promptTokens: 0, completionTokens: 0, totalTokens: 0 }
