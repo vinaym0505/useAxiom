@@ -1,24 +1,79 @@
 import { Injectable } from '@nestjs/common';
+import { prisma } from '@useaxiom/database';
 
 @Injectable()
 export class AnalyticsService {
-  async getDashboard(timeframe: string = '7d') {
-    return Promise.resolve({
-      active_projects: 3,
-      blocked_tasks: 1,
-      ai_interventions_count: 5,
-      team_velocity: 85,
+  async getDashboard(organizationId: string, timeframe: string = '7d') {
+    const [activeProjects, blockedTasks, aiTasks, totalTasks] =
+      await Promise.all([
+        prisma.project.count({
+          where: {
+            organization_id: organizationId,
+            status: 'ACTIVE',
+            deleted_at: null,
+          },
+        }),
+        prisma.task.count({
+          where: {
+            organization_id: organizationId,
+            status: 'BLOCKED',
+            deleted_at: null,
+          },
+        }),
+        prisma.task.count({
+          where: {
+            organization_id: organizationId,
+            created_by_ai: true,
+            deleted_at: null,
+          },
+        }),
+        prisma.task.count({
+          where: {
+            organization_id: organizationId,
+            deleted_at: null,
+          },
+        }),
+      ]);
+
+    return {
+      active_projects: activeProjects,
+      blocked_tasks: blockedTasks,
+      ai_interventions_count: aiTasks,
+      team_velocity:
+        totalTasks > 0 ? Math.round((activeProjects / totalTasks) * 100) : 100,
       timeframe,
-    });
+    };
   }
 
-  async getTeamWorkload() {
-    return Promise.resolve({
-      workloads: [
-        { employee_id: 'emp_1', active_tasks: 2, capacity_percentage: 40 },
-        { employee_id: 'emp_2', active_tasks: 4, capacity_percentage: 80 },
-        { employee_id: 'emp_3', active_tasks: 0, capacity_percentage: 0 },
-      ],
+  async getTeamWorkload(organizationId: string) {
+    const employees = await prisma.user.findMany({
+      where: {
+        organization_id: organizationId,
+        role: 'EMPLOYEE',
+        deleted_at: null,
+      },
+      include: {
+        assignments: {
+          include: {
+            task: true,
+          },
+        },
+      },
     });
+
+    const workloads = employees.map((emp) => {
+      const activeTasks = emp.assignments.filter(
+        (a) => a.task.status === 'IN_PROGRESS' && a.task.deleted_at === null,
+      ).length;
+
+      return {
+        employee_id: emp.id,
+        employee_name: emp.name,
+        active_tasks: activeTasks,
+        capacity_percentage: Math.min(activeTasks * 25, 100),
+      };
+    });
+
+    return { workloads };
   }
 }

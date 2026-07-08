@@ -398,24 +398,27 @@ describe('useAxiom Backend Routes (e2e)', () => {
     });
   });
 
-  describe('Analytics routes (Skeletons)', () => {
-    it('GET /api/v1/analytics/dashboard', () => {
-      return request(app.getHttpServer())
-        .get('/api/v1/analytics/dashboard?timeframe=14d5')
-        .expect(200)
-        .expect((res) => {
-          expect(res.body.active_projects).toBe(3);
-          expect(res.body.timeframe).toBe('14d5');
-        });
+  describe('Analytics routes (Sprint 5 Live Database)', () => {
+    it('GET /api/v1/analytics/dashboard', async () => {
+      const res = await request(app.getHttpServer())
+        .get('/api/v1/analytics/dashboard?timeframe=14d')
+        .set('x-organization-id', orgId)
+        .expect(200);
+
+      expect(res.body).toHaveProperty('active_projects');
+      expect(res.body).toHaveProperty('blocked_tasks');
+      expect(res.body.timeframe).toBe('14d');
     });
 
-    it('GET /api/v1/analytics/team-workload', () => {
-      return request(app.getHttpServer())
+    it('GET /api/v1/analytics/team-workload', async () => {
+      const res = await request(app.getHttpServer())
         .get('/api/v1/analytics/team-workload')
-        .expect(200)
-        .expect((res) => {
-          expect(res.body.workloads).toBeDefined();
-        });
+        .set('x-organization-id', orgId)
+        .expect(200);
+
+      expect(res.body).toHaveProperty('workloads');
+      expect(res.body.workloads.length).toBeGreaterThanOrEqual(1);
+      expect(res.body.workloads[0].employee_id).toBe(userId);
     });
   });
 
