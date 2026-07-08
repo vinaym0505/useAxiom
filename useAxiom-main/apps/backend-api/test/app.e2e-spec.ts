@@ -17,7 +17,7 @@ describe('useAxiom Backend Routes (e2e)', () => {
       update: {},
       create: {
         id: orgId,
-        name: 'Sprint 3 Test Org',
+        name: 'Sprint 4 Test Org',
       },
     });
 
@@ -28,7 +28,7 @@ describe('useAxiom Backend Routes (e2e)', () => {
         id: userId,
         organization_id: orgId,
         role: 'EMPLOYEE',
-        name: 'Sprint 3 Developer',
+        name: 'Sprint 4 Developer',
         phone_number: '1234567890',
       },
     });
@@ -61,7 +61,7 @@ describe('useAxiom Backend Routes (e2e)', () => {
         .post('/api/v1/projects')
         .set('x-organization-id', orgId)
         .send({
-          name: 'Sprint 3 Launch Campaign',
+          name: 'Sprint 4 Launch Campaign',
           objective: 'Test milestone and state machine workflows',
           target_deadline: '2026-12-01T00:00:00.000Z',
         })
@@ -240,6 +240,164 @@ describe('useAxiom Backend Routes (e2e)', () => {
     });
   });
 
+  describe('Task Dependencies & Rules (Sprint 4)', () => {
+    let projectId: string;
+    let taskAId: string;
+    let taskBId: string;
+
+    beforeAll(async () => {
+      // Seed a project and two task mappings
+      const projectRes = await request(app.getHttpServer())
+        .post('/api/v1/projects')
+        .set('x-organization-id', orgId)
+        .send({
+          name: 'Sprint 4 Dependencies Project',
+          objective: 'Test execution blockers and cycle detection',
+          target_deadline: '2026-12-05T00:00:00.000Z',
+        })
+        .expect(201);
+
+      projectId = projectRes.body.id;
+
+      const taskARes = await request(app.getHttpServer())
+        .post('/api/v1/tasks')
+        .set('x-organization-id', orgId)
+        .send({
+          project_id: projectId,
+          title: 'Prerequisite Task A',
+          description: 'Must complete this first',
+          estimated_hours: 4,
+        })
+        .expect(201);
+
+      taskAId = taskARes.body.id;
+
+      const taskBRes = await request(app.getHttpServer())
+        .post('/api/v1/tasks')
+        .set('x-organization-id', orgId)
+        .send({
+          project_id: projectId,
+          title: 'Dependent Task B',
+          description: 'Cannot start until A is done',
+          estimated_hours: 6,
+        })
+        .expect(201);
+
+      taskBId = taskBRes.body.id;
+
+      // Approve both tasks to make them PENDING
+      await request(app.getHttpServer())
+        .post(`/api/v1/tasks/${taskAId}/approve`)
+        .set('x-organization-id', orgId)
+        .expect(200);
+
+      await request(app.getHttpServer())
+        .post(`/api/v1/tasks/${taskBId}/approve`)
+        .set('x-organization-id', orgId)
+        .expect(200);
+    });
+
+    it('POST /api/v1/tasks/:id/dependencies (Add Dependency: B depends on A)', async () => {
+      const res = await request(app.getHttpServer())
+        .post(`/api/v1/tasks/${taskBId}/dependencies`)
+        .set('x-organization-id', orgId)
+        .send({
+          dependsOnTaskId: taskAId,
+        })
+        .expect(201);
+
+      expect(res.body).toHaveProperty('id');
+      expect(res.body.task_id).toBe(taskBId);
+      expect(res.body.depends_on_task_id).toBe(taskAId);
+    });
+
+    it('GET /api/v1/tasks/:id/dependencies (List Dependencies)', async () => {
+      const res = await request(app.getHttpServer())
+        .get(`/api/v1/tasks/${taskBId}/dependencies`)
+        .set('x-organization-id', orgId)
+        .expect(200);
+
+      expect(res.body.prerequisites.length).toBe(1);
+      expect(res.body.prerequisites[0].id).toBe(taskAId);
+    });
+
+    it('POST /api/v1/tasks/:id/dependencies (Self Dependency Block)', async () => {
+      await request(app.getHttpServer())
+        .post(`/api/v1/tasks/${taskAId}/dependencies`)
+        .set('x-organization-id', orgId)
+        .send({
+          dependsOnTaskId: taskAId,
+        })
+        .expect(400); // self loops are blocked
+    });
+
+    it('POST /api/v1/tasks/:id/dependencies (Circular Dependency Block: A depends on B)', async () => {
+      // Adding A depends on B when B already depends on A forms a cycle.
+      await request(app.getHttpServer())
+        .post(`/api/v1/tasks/${taskAId}/dependencies`)
+        .set('x-organization-id', orgId)
+        .send({
+          dependsOnTaskId: taskBId,
+        })
+        .expect(400); // should throw cycle bad request
+    });
+
+    it('PUT /api/v1/tasks/:id (Execution Block checks - Blocked)', async () => {
+      // Trying to start Task B when prerequisite Task A is still PENDING must fail
+      await request(app.getHttpServer())
+        .put(`/api/v1/tasks/${taskBId}`)
+        .set('x-organization-id', orgId)
+        .send({
+          status: 'IN_PROGRESS',
+        })
+        .expect(400); // Blocked
+    });
+
+    it('PUT /api/v1/tasks/:id (Execution Block checks - Allowed after prerequisite completed)', async () => {
+      // 1. Start Task A
+      await request(app.getHttpServer())
+        .put(`/api/v1/tasks/${taskAId}`)
+        .set('x-organization-id', orgId)
+        .send({
+          status: 'IN_PROGRESS',
+        })
+        .expect(200);
+
+      // 2. Complete Task A
+      await request(app.getHttpServer())
+        .put(`/api/v1/tasks/${taskAId}`)
+        .set('x-organization-id', orgId)
+        .send({
+          status: 'COMPLETED',
+        })
+        .expect(200);
+
+      // 3. Now, starting Task B should succeed
+      await request(app.getHttpServer())
+        .put(`/api/v1/tasks/${taskBId}`)
+        .set('x-organization-id', orgId)
+        .send({
+          status: 'IN_PROGRESS',
+        })
+        .expect(200);
+    });
+
+    it('DELETE /api/v1/tasks/:id/dependencies/:dependsOnTaskId (Remove Dependency)', async () => {
+      await request(app.getHttpServer())
+        .delete(`/api/v1/tasks/${taskBId}/dependencies/${taskAId}`)
+        .set('x-organization-id', orgId)
+        .expect(200);
+
+      // List should now specify 0 prerequisites
+      const res = await request(app.getHttpServer())
+        .get(`/api/v1/tasks/${taskBId}/dependencies`)
+        .set('x-organization-id', orgId)
+        .expect(200);
+
+      expect(res.body.prerequisites.length).toBe(0);
+    });
+  });
+
   describe('Analytics routes (Skeletons)', () => {
     it('GET /api/v1/analytics/dashboard', () => {
       return request(app.getHttpServer())
@@ -262,6 +420,7 @@ describe('useAxiom Backend Routes (e2e)', () => {
   });
 
   afterAll(async () => {
+    await prisma.taskDependency.deleteMany({});
     await prisma.assignment.deleteMany({});
     await prisma.task.deleteMany({});
     await prisma.milestone.deleteMany({});

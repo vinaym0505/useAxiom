@@ -27,6 +27,30 @@ export class TaskService {
     }
   }
 
+  private async hasCircularPath(
+    currentId: string,
+    targetId: string,
+    visited: Set<string>,
+  ): Promise<boolean> {
+    if (currentId === targetId) return true;
+    if (visited.has(currentId)) return false;
+    visited.add(currentId);
+
+    const deps = await prisma.taskDependency.findMany({
+      where: { task_id: currentId },
+    });
+
+    for (const dep of deps) {
+      const found = await this.hasCircularPath(
+        dep.depends_on_task_id,
+        targetId,
+        visited,
+      );
+      if (found) return true;
+    }
+    return false;
+  }
+
   async createTask(organizationId: string, taskData: ITaskCreateDto) {
     const project = await prisma.project.findFirst({
       where: {
@@ -143,6 +167,26 @@ export class TaskService {
 
     if (updateData.status) {
       this.validateStatusTransition(task.status, updateData.status);
+
+      // Rule: Block taking a task to IN_PROGRESS if prerequisites are not COMPLETED
+      if (updateData.status === 'IN_PROGRESS') {
+        const blockedBy = await prisma.taskDependency.findMany({
+          where: { task_id: id },
+          include: { prerequisite: true },
+        });
+
+        const incomplete = blockedBy.filter(
+          (dep) => dep.prerequisite.status !== 'COMPLETED',
+        );
+        if (incomplete.length > 0) {
+          const names = incomplete
+            .map((dep) => `'${dep.prerequisite.title}'`)
+            .join(', ');
+          throw new BadRequestException(
+            `Cannot start task. It is blocked by incomplete prerequisite tasks: ${names}.`,
+          );
+        }
+      }
     }
 
     const data: Prisma.TaskUpdateInput = {};
@@ -257,5 +301,90 @@ export class TaskService {
         user_id: userId,
       },
     });
+  }
+
+  async addDependency(
+    organizationId: string,
+    taskId: string,
+    dependsOnTaskId: string,
+  ) {
+    if (taskId === dependsOnTaskId) {
+      throw new BadRequestException('A task cannot depend on itself');
+    }
+
+    const [task, prereq] = await Promise.all([
+      this.getTaskById(organizationId, taskId),
+      this.getTaskById(organizationId, dependsOnTaskId),
+    ]);
+
+    if (task.project_id !== prereq.project_id) {
+      throw new BadRequestException('Tasks must belong to the same project');
+    }
+
+    // DFS check to prevent cycles
+    const hasCycle = await this.hasCircularPath(
+      dependsOnTaskId,
+      taskId,
+      new Set<string>(),
+    );
+    if (hasCycle) {
+      throw new BadRequestException(
+        `Adding dependency throws circular reference between Task ID '${taskId}' and '${dependsOnTaskId}'.`,
+      );
+    }
+
+    return prisma.taskDependency.upsert({
+      where: {
+        task_id_depends_on_task_id: {
+          task_id: taskId,
+          depends_on_task_id: dependsOnTaskId,
+        },
+      },
+      update: {},
+      create: {
+        task_id: taskId,
+        depends_on_task_id: dependsOnTaskId,
+      },
+    });
+  }
+
+  async removeDependency(
+    organizationId: string,
+    taskId: string,
+    dependsOnTaskId: string,
+  ) {
+    await Promise.all([
+      this.getTaskById(organizationId, taskId),
+      this.getTaskById(organizationId, dependsOnTaskId),
+    ]);
+
+    return prisma.taskDependency.delete({
+      where: {
+        task_id_depends_on_task_id: {
+          task_id: taskId,
+          depends_on_task_id: dependsOnTaskId,
+        },
+      },
+    });
+  }
+
+  async getDependencies(organizationId: string, taskId: string) {
+    await this.getTaskById(organizationId, taskId);
+
+    const [prerequisites, dependents] = await Promise.all([
+      prisma.taskDependency.findMany({
+        where: { task_id: taskId },
+        include: { prerequisite: true },
+      }),
+      prisma.taskDependency.findMany({
+        where: { depends_on_task_id: taskId },
+        include: { task: true },
+      }),
+    ]);
+
+    return {
+      prerequisites: prerequisites.map((d) => d.prerequisite),
+      dependents: dependents.map((d) => d.task),
+    };
   }
 }

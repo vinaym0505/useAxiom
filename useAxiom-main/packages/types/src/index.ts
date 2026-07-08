@@ -72,3 +72,14 @@ export interface IAssignment {
   user_id: string;
   created_at: Date;
 }
+
+export interface ITaskDependency {
+  id: string;
+  task_id: string;
+  depends_on_task_id: string;
+  created_at: Date;
+}
+
+export interface ITaskDependencyCreateDto {
+  depends_on_task_id: string;
+}

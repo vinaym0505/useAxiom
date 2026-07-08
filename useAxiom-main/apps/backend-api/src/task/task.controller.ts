@@ -108,4 +108,44 @@ export class TaskController {
     const organizationId = this.getOrgId(orgId);
     return this.taskService.assignTask(organizationId, id, body.userId);
   }
+
+  @Post(':id/dependencies')
+  @HttpCode(HttpStatus.CREATED)
+  async addDependency(
+    @Headers('x-organization-id') orgId: string,
+    @Param('id') id: string,
+    @Body() body: { dependsOnTaskId: string },
+  ) {
+    const organizationId = this.getOrgId(orgId);
+    return this.taskService.addDependency(
+      organizationId,
+      id,
+      body.dependsOnTaskId,
+    );
+  }
+
+  @Delete(':id/dependencies/:dependsOnTaskId')
+  @HttpCode(HttpStatus.OK)
+  async removeDependency(
+    @Headers('x-organization-id') orgId: string,
+    @Param('id') id: string,
+    @Param('dependsOnTaskId') dependsOnTaskId: string,
+  ) {
+    const organizationId = this.getOrgId(orgId);
+    return this.taskService.removeDependency(
+      organizationId,
+      id,
+      dependsOnTaskId,
+    );
+  }
+
+  @Get(':id/dependencies')
+  @HttpCode(HttpStatus.OK)
+  async getDependencies(
+    @Headers('x-organization-id') orgId: string,
+    @Param('id') id: string,
+  ) {
+    const organizationId = this.getOrgId(orgId);
+    return this.taskService.getDependencies(organizationId, id);
+  }
 }
