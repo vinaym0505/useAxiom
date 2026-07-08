@@ -1,12 +1,20 @@
 {
   "compilerOptions": {
     "target": "ES2022",
-    "module": "CommonJS",
+    "module": "NodeNext",
+    "moduleResolution": "NodeNext",
     "strict": true,
     "esModuleInterop": true,
     "skipLibCheck": true,
     "forceConsistentCasingInFileNames": true,
-    "moduleResolution": "node",
-    "isolatedModules": true
+    "declaration": true,
+    "declarationMap": true,
+    "baseUrl": ".",
+    "paths": {
+      "@useaxiom/ai-providers": ["../ai-providers/index.ts"],
+      "@useaxiom/ai-memory": ["../ai-memory/index.ts"],
+      "@useaxiom/ai-tools": ["../ai-tools/index.ts"],
+      "@useaxiom/ai-core": ["../ai-core/index.ts"]
+    }
   }
 }

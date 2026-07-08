@@ -155,7 +155,14 @@ importers:
         specifier: ^5
         version: 5.9.3
 
-  packages/ai-core: {}
+  packages/ai-core:
+    dependencies:
+      '@useaxiom/ai-memory':
+        specifier: workspace:*
+        version: link:../ai-memory
+      '@useaxiom/ai-providers':
+        specifier: workspace:*
+        version: link:../ai-providers
 
   packages/ai-memory: {}
 
