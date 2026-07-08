@@ -32,6 +32,15 @@ importers:
       '@nestjs/platform-express':
         specifier: ^11.0.1
         version: 11.1.28(@nestjs/common@11.1.28(reflect-metadata@0.2.2)(rxjs@7.8.2))(@nestjs/core@11.1.28)
+      '@useaxiom/ai-core':
+        specifier: workspace:*
+        version: link:../../packages/ai-core
+      '@useaxiom/ai-memory':
+        specifier: workspace:*
+        version: link:../../packages/ai-memory
+      '@useaxiom/ai-providers':
+        specifier: workspace:*
+        version: link:../../packages/ai-providers
       reflect-metadata:
         specifier: ^0.2.2
         version: 0.2.2
@@ -163,8 +172,19 @@ importers:
       '@useaxiom/ai-providers':
         specifier: workspace:*
         version: link:../ai-providers
+    devDependencies:
+      '@types/node':
+        specifier: ^20.0.0
+        version: 20.19.43
+      '@useaxiom/config':
+        specifier: workspace:*
+        version: link:../config
 
-  packages/ai-memory: {}
+  packages/ai-memory:
+    devDependencies:
+      '@useaxiom/config':
+        specifier: workspace:*
+        version: link:../config
 
   packages/ai-providers:
     dependencies:
@@ -179,7 +199,11 @@ importers:
         specifier: workspace:*
         version: link:../config
 
-  packages/ai-tools: {}
+  packages/ai-tools:
+    devDependencies:
+      '@useaxiom/config':
+        specifier: workspace:*
+        version: link:../config
 
   packages/config: {}
 
