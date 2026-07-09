@@ -3,17 +3,23 @@
   "version": "1.0.0",
   "private": true,
   "scripts": {
-    "dev": "node src/index.js",
-    "build": "echo 'build workers'",
-    "start": "node src/index.js",
-    "lint": "echo 'linting workers'"
+    "dev": "tsx src/main.ts",
+    "build": "tsc",
+    "start": "node dist/main.js",
+    "test:integration": "tsx src/test-integration.ts",
+    "lint": "eslint src/**/*.ts"
   },
   "dependencies": {
-    "bullmq": "^5.7.0",
-    "ioredis": "^5.3.2",
-    "@useaxiom/database": "workspace:*"
+    "bullmq": "^5.8.0",
+    "dotenv": "^16.4.5",
+    "ioredis": "^5.4.1",
+    "@useaxiom/database": "workspace:*",
+    "@useaxiom/types": "workspace:*",
+    "@useaxiom/ai-core": "workspace:*"
   },
   "devDependencies": {
+    "@types/node": "^20.11.0",
+    "ts-node": "^10.9.2",
     "typescript": "^5.0.0",
     "@useaxiom/config": "workspace:*"
   }

@@ -2,7 +2,13 @@
   "extends": "../config/tsconfig.base.json",
   "compilerOptions": {
     "outDir": "./dist",
-    "rootDir": "."
+    "rootDir": ".",
+    "baseUrl": ".",
+    "paths": {
+      "@useaxiom/ai-providers": ["../ai-providers/dist/index.d.ts"],
+      "@useaxiom/database": ["../database/dist/index.d.ts"]
+    }
   },
-  "include": ["**/*.ts"]
+  "include": ["**/*.ts"],
+  "exclude": ["node_modules", "dist"]
 }

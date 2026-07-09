@@ -1,7 +1,16 @@
 {
   "extends": "../../packages/config/tsconfig.base.json",
   "compilerOptions": {
-    "outDir": "dist"
+    "outDir": "./dist",
+    "rootDir": "./src",
+    "baseUrl": ".",
+    "paths": {
+      "@useaxiom/ai-core": ["../../packages/ai-core/dist/index.d.ts"],
+      "@useaxiom/ai-providers": ["../../packages/ai-providers/dist/index.d.ts"],
+      "@useaxiom/ai-memory": ["../../packages/ai-memory/dist/index.d.ts"],
+      "@useaxiom/ai-tools": ["../../packages/ai-tools/dist/index.d.ts"],
+      "@useaxiom/database": ["../../packages/database/dist/index.d.ts"]
+    }
   },
   "include": ["src/**/*"]
 }
