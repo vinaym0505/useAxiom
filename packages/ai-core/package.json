@@ -2,5 +2,17 @@
   "name": "@useaxiom/ai-core",
   "version": "1.0.0",
   "private": true,
-  "main": "index.ts"
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "scripts": {
+    "build": "tsc"
+  },
+  "dependencies": {
+    "@useaxiom/ai-providers": "workspace:*",
+    "@useaxiom/ai-memory": "workspace:*"
+  },
+  "devDependencies": {
+    "@types/node": "^20.0.0",
+    "@useaxiom/config": "workspace:*"
+  }
 }
