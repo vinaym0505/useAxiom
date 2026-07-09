@@ -4,7 +4,7 @@ import { getMockTasks } from '../utils/mock-db';
 const remindedTasks = new Set<string>();
 
 export function createReminderSchedulerWorker(
-  redisConnection: { host: string; port: number },
+  redisConnection: any,
   outgoingQueue: Queue
 ) {
   console.info('[ReminderScheduler] Starting reminder scheduler worker...');

@@ -1,6 +1,6 @@
 import { Worker, Job } from 'bullmq';
 
-export function createOutgoingMessagesWorker(redisConnection: { host: string; port: number }) {
+export function createOutgoingMessagesWorker(redisConnection: any) {
   console.info('[OutgoingWorker] Starting outgoing messages worker...');
 
   const worker = new Worker(

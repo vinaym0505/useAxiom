@@ -19,21 +19,21 @@ console.log(`Starting Background Workers with Redis URL: ${redisUrl}...`);
 
 // 1. AI Leads Workers
 // @ts-ignore
-const plannerWorker = new Worker('planner_jobs', plannerWorkerProcessor, { connection: redisConnection });
+const plannerWorker = new Worker('planner_jobs', plannerWorkerProcessor, { connection: redisConnection as any });
 // @ts-ignore
-const whatsappWorker = new Worker('whatsapp_jobs', whatsappWorkerProcessor, { connection: redisConnection });
+const whatsappWorker = new Worker('whatsapp_jobs', whatsappWorkerProcessor, { connection: redisConnection as any });
 
 plannerWorker.on('completed', job => console.log(`[Planner] Job ${job.id} completed.`));
 whatsappWorker.on('completed', job => console.log(`[WhatsApp] Job ${job.id} completed.`));
 
 // 2. Communications & Outbound Queue Workers
-const outgoingQueue = new Queue('outgoing_messages', { connection: redisConnection });
-const inboundWorker = createIncomingMessagesWorker(redisConnection, outgoingQueue);
-const outboundWorker = createOutgoingMessagesWorker(redisConnection);
-const reminderWorker = createReminderSchedulerWorker(redisConnection, outgoingQueue);
+const outgoingQueue = new Queue('outgoing_messages', { connection: redisConnection as any });
+const inboundWorker = createIncomingMessagesWorker(redisConnection as any, outgoingQueue);
+const outboundWorker = createOutgoingMessagesWorker(redisConnection as any);
+const reminderWorker = createReminderSchedulerWorker(redisConnection as any, outgoingQueue);
 
 // 3. Repeatable Cron Job Setup
-const reminderSchedulerQueue = new Queue('reminder_scheduler', { connection: redisConnection });
+const reminderSchedulerQueue = new Queue('reminder_scheduler', { connection: redisConnection as any });
 
 async function setupRepeatableJobs() {
   console.info('[Background Workers] Setting up repeatable cron jobs...');

@@ -2,7 +2,7 @@ import { Worker, Job, Queue } from 'bullmq';
 import { getMockTasks } from '../utils/mock-db';
 
 export function createIncomingMessagesWorker(
-  redisConnection: { host: string; port: number },
+  redisConnection: any,
   outgoingQueue: Queue
 ) {
   console.info('[IncomingWorker] Starting incoming messages worker...');
