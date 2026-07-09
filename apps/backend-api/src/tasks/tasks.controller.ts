@@ -66,6 +66,31 @@ export class TasksController {
     return this.tasksService.updateStatus(user.organizationId, id, body.status);
   }
 
+  @Delete('tasks/:id')
+  async deleteTask(@CurrentUser() user: ActiveUser, @Param('id') id: string) {
+    return this.tasksService.softDeleteTask(user.organizationId, id);
+  }
+
+  @Post('tasks/:id/approve')
+  @HttpCode(HttpStatus.OK)
+  async approveTask(
+    @CurrentUser() user: ActiveUser,
+    @Param('id') id: string,
+    @Body() overrideData?: { assigneeIdOverride?: string; estimatedHoursOverride?: number },
+  ) {
+    return this.tasksService.approveTask(user.organizationId, id, overrideData);
+  }
+
+  @Post('tasks/:id/assign')
+  @HttpCode(HttpStatus.OK)
+  async assignTask(
+    @CurrentUser() user: ActiveUser,
+    @Param('id') id: string,
+    @Body() body: { userId: string },
+  ) {
+    return this.tasksService.assignTask(user.organizationId, id, body.userId);
+  }
+
   @Post('tasks/:taskId/dependencies')
   @HttpCode(HttpStatus.CREATED)
   async addDependency(

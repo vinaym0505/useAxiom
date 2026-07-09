@@ -56,4 +56,79 @@ export class ProjectsService {
       data: { status },
     });
   }
+
+  async softDeleteProject(organizationId: string, id: string) {
+    const project = await this.findOne(organizationId, id);
+    if (!project) {
+      throw new NotFoundException(`Project with ID ${id} not found under your organization`);
+    }
+    return this.prisma.project.update({
+      where: { id },
+      data: {
+        deletedAt: new Date(),
+      },
+    });
+  }
+
+  async approvePlan(organizationId: string, id: string) {
+    const project = await this.findOne(organizationId, id);
+    if (!project) {
+      throw new NotFoundException(`Project with ID ${id} not found under your organization`);
+    }
+
+    const updatedProject = await this.prisma.project.update({
+      where: { id },
+      data: { status: 'ACTIVE' },
+    });
+
+    await this.prisma.task.updateMany({
+      where: {
+        projectId: id,
+        status: 'PROPOSED',
+      },
+      data: {
+        status: 'PENDING',
+      },
+    });
+
+    return updatedProject;
+  }
+
+  async generatePlan(organizationId: string, id: string) {
+    const project = await this.findOne(organizationId, id);
+    if (!project) {
+      throw new NotFoundException(`Project with ID ${id} not found under your organization`);
+    }
+    return {
+      message: 'Plan generation triggered',
+      jobId: `job_${Math.random().toString(36).substring(2, 11)}`,
+      projectId: id,
+    };
+  }
+
+  async getProjectTasks(organizationId: string, projectId: string) {
+    const project = await this.findOne(organizationId, projectId);
+    if (!project) {
+      throw new NotFoundException(`Project with ID ${projectId} not found under your organization`);
+    }
+    return this.prisma.task.findMany({
+      where: {
+        projectId: projectId,
+        deletedAt: null,
+      },
+    });
+  }
+
+  async getProjectMilestones(organizationId: string, projectId: string) {
+    const project = await this.findOne(organizationId, projectId);
+    if (!project) {
+      throw new NotFoundException(`Project with ID ${projectId} not found under your organization`);
+    }
+    return this.prisma.milestone.findMany({
+      where: {
+        projectId: projectId,
+        deletedAt: null,
+      },
+    });
+  }
 }

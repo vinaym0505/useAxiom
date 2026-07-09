@@ -113,16 +113,157 @@ export class TasksService {
     });
   }
 
+  private validateStatusTransition(currentStatus: string, nextStatus: string) {
+    if (currentStatus === nextStatus) return;
+
+    const allowedTransitions: Record<string, string[]> = {
+      PROPOSED: ['PENDING'],
+      PENDING: ['IN_PROGRESS'],
+      IN_PROGRESS: ['BLOCKED', 'COMPLETED'],
+      BLOCKED: ['IN_PROGRESS'],
+      COMPLETED: [],
+    };
+
+    const allowed = allowedTransitions[currentStatus] || [];
+    if (!allowed.includes(nextStatus)) {
+      throw new BadRequestException(
+        `Invalid task status transition from '${currentStatus}' to '${nextStatus}'.`,
+      );
+    }
+  }
+
   async updateStatus(organizationId: string, id: string, status: TaskStatus): Promise<Task> {
     const task = await this.findOne(organizationId, id);
     if (!task) {
       throw new NotFoundException(`Task with ID ${id} not found under your organization`);
     }
+
+    this.validateStatusTransition(task.status, status);
+
+    if (status === 'IN_PROGRESS') {
+      const blockedBy = await this.prisma.taskDependency.findMany({
+        where: { taskId: id },
+        include: { dependsOnTask: true },
+      });
+
+      const incomplete = blockedBy.filter(
+        (dep) =>
+          dep.dependsOnTask.status !== 'COMPLETED' &&
+          dep.dependsOnTask.deletedAt === null,
+      );
+      if (incomplete.length > 0) {
+        const names = incomplete
+          .map((dep) => `'${dep.dependsOnTask.title}'`)
+          .join(', ');
+        throw new BadRequestException(
+          `Cannot start task. It is blocked by incomplete prerequisite tasks: ${names}.`,
+        );
+      }
+    }
+
     return this.prisma.task.update({
       where: { id },
       data: { status },
       include: {
         milestone: true,
+      },
+    });
+  }
+
+  async softDeleteTask(organizationId: string, id: string) {
+    await this.findOne(organizationId, id);
+    return this.prisma.task.update({
+      where: { id },
+      data: {
+        deletedAt: new Date(),
+      },
+    });
+  }
+
+  async approveTask(
+    organizationId: string,
+    id: string,
+    overrideData?: {
+      assigneeIdOverride?: string;
+      estimatedHoursOverride?: number;
+    },
+  ) {
+    const task = await this.findOne(organizationId, id);
+    if (!task) {
+      throw new NotFoundException(`Task with ID ${id} not found under your organization`);
+    }
+
+    this.validateStatusTransition(task.status, 'PENDING');
+
+    const updatePayload: any = { status: 'PENDING' };
+    if (overrideData?.estimatedHoursOverride !== undefined) {
+      updatePayload.estimatedHours = overrideData.estimatedHoursOverride;
+    }
+
+    if (overrideData?.assigneeIdOverride) {
+      const user = await this.prisma.user.findFirst({
+        where: {
+          id: overrideData.assigneeIdOverride,
+          organizationId: organizationId,
+        },
+      });
+      if (!user) {
+        throw new NotFoundException(
+          `User with ID ${overrideData.assigneeIdOverride} not found in this organization`,
+        );
+      }
+
+      await this.prisma.assignment.upsert({
+        where: {
+          taskId_userId: {
+            taskId: id,
+            userId: overrideData.assigneeIdOverride,
+          },
+        },
+        update: {},
+        create: {
+          taskId: id,
+          userId: overrideData.assigneeIdOverride,
+        },
+      });
+    }
+
+    return this.prisma.task.update({
+      where: { id },
+      data: updatePayload,
+    });
+  }
+
+  async assignTask(organizationId: string, taskId: string, userId: string) {
+    const task = await this.findOne(organizationId, taskId);
+    if (!task) {
+      throw new NotFoundException(`Task with ID ${taskId} not found under your organization`);
+    }
+
+    const user = await this.prisma.user.findFirst({
+      where: {
+        id: userId,
+        organizationId: organizationId,
+      },
+    });
+
+    if (!user) {
+      throw new NotFoundException(
+        `User with ID ${userId} not found in this organization`,
+      );
+    }
+
+    return this.prisma.assignment.upsert({
+      where: {
+        taskId_userId: {
+          taskId: taskId,
+          userId: userId,
+        },
+      },
+      update: {},
+      create: {
+        taskId: taskId,
+        userId: userId,
       },
     });
   }

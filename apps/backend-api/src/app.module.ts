@@ -11,6 +11,7 @@ import { TasksModule } from './tasks/tasks.module';
 import { AssignmentsModule } from './assignments/assignments.module';
 import { BullModule } from '@nestjs/bullmq';
 import { NotificationsModule } from './notifications/notifications.module';
+import { AnalyticsModule } from './analytics/analytics.module';
 
 @Module({
   imports: [
@@ -28,7 +29,8 @@ import { NotificationsModule } from './notifications/notifications.module';
     MilestonesModule,
     TasksModule,
     AssignmentsModule,
-    NotificationsModule
+    NotificationsModule,
+    AnalyticsModule
   ],
   controllers: [AppController],
   providers: [AppService],

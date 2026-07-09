@@ -53,4 +53,31 @@ export class ProjectsController {
   private async prismaFindOneHelper(organizationId: string, id: string) {
     return this.projectsService.findOne(organizationId, id);
   }
+
+  @Delete(':id')
+  async deleteProject(@CurrentUser() user: ActiveUser, @Param('id') id: string) {
+    return this.projectsService.softDeleteProject(user.organizationId, id);
+  }
+
+  @Post(':id/approve')
+  @HttpCode(HttpStatus.OK)
+  async approvePlan(@CurrentUser() user: ActiveUser, @Param('id') id: string) {
+    return this.projectsService.approvePlan(user.organizationId, id);
+  }
+
+  @Post(':id/generate-plan')
+  @HttpCode(HttpStatus.OK)
+  async generatePlan(@CurrentUser() user: ActiveUser, @Param('id') id: string) {
+    return this.projectsService.generatePlan(user.organizationId, id);
+  }
+
+  @Get(':id/tasks')
+  async getProjectTasks(@CurrentUser() user: ActiveUser, @Param('id') id: string) {
+    return this.projectsService.getProjectTasks(user.organizationId, id);
+  }
+
+  @Get(':id/milestones')
+  async getProjectMilestones(@CurrentUser() user: ActiveUser, @Param('id') id: string) {
+    return this.projectsService.getProjectMilestones(user.organizationId, id);
+  }
 }
