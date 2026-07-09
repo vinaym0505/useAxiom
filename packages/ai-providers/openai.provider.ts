@@ -83,4 +83,12 @@ export class OpenAiProvider implements ILlmProvider {
 
     return JSON.parse(content) as T;
   }
+
+  async generateEmbedding(text: string): Promise<number[]> {
+    const response = await this.client.embeddings.create({
+      model: 'text-embedding-3-small',
+      input: text,
+    });
+    return response.data[0].embedding;
+  }
 }

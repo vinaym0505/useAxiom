@@ -7,6 +7,10 @@
   "scripts": {
     "build": "tsc"
   },
+  "dependencies": {
+    "@useaxiom/ai-providers": "workspace:*",
+    "@useaxiom/database": "workspace:*"
+  },
   "devDependencies": {
     "@useaxiom/config": "workspace:*"
   }

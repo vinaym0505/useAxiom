@@ -1,0 +1,106 @@
+generator client {
+  provider        = "prisma-client-js"
+  previewFeatures = ["postgresqlExtensions"]
+}
+
+datasource db {
+  provider   = "postgresql"
+  url        = env("DATABASE_URL")
+  extensions = [vector]
+}
+
+model Organization {
+  id        String   @id @default(uuid())
+  name      String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  users    User[]
+  projects Project[]
+}
+
+model User {
+  id             String       @id @default(uuid())
+  email          String       @unique
+  name           String?
+  role           String       @default("EMPLOYEE") // ADMIN, MANAGER, EMPLOYEE
+  organizationId String
+  organization   Organization @relation(fields: [organizationId], references: [id])
+  createdAt      DateTime     @default(now())
+  updatedAt      DateTime     @updatedAt
+
+  assignedTasks Task[] @relation("TaskAssignee")
+}
+
+model Project {
+  id             String       @id @default(uuid())
+  name           String
+  description    String?
+  status         String       @default("PROPOSED") // PROPOSED, ACTIVE, COMPLETED, ON_HOLD
+  organizationId String
+  organization   Organization @relation(fields: [organizationId], references: [id])
+  createdAt      DateTime     @default(now())
+  updatedAt      DateTime     @updatedAt
+
+  tasks      Task[]
+  milestones Milestone[]
+}
+
+model Milestone {
+  id        String   @id @default(uuid())
+  name      String
+  projectId String
+  project   Project  @relation(fields: [projectId], references: [id])
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model Task {
+  id          String   @id @default(uuid())
+  title       String
+  description String?
+  status      String   @default("PROPOSED") // PROPOSED, IN_PROGRESS, COMPLETED, BLOCKED
+  projectId   String
+  project     Project  @relation(fields: [projectId], references: [id])
+  assigneeId  String?
+  assignee    User?    @relation("TaskAssignee", fields: [assigneeId], references: [id])
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+model AiAgentRun {
+  id        String   @id @default(uuid())
+  agentType String
+  status    String
+  result    Json?
+  createdAt DateTime @default(now())
+}
+
+model WhatsAppMessage {
+  id        String   @id @default(uuid())
+  from      String
+  content   String
+  status    String   @default("RECEIVED")
+  createdAt DateTime @default(now())
+}
+
+model ShortTermMemory {
+  id        String   @id @default(uuid())
+  threadId  String
+  role      String
+  content   String
+  createdAt DateTime @default(now())
+
+  @@index([threadId])
+}
+
+model LongTermMemory {
+  id        String   @id @default(uuid())
+  key       String
+  value     String
+  tags      String[]
+  embedding Unsupported("vector(1536)")?
+  createdAt DateTime @default(now())
+
+  @@index([key])
+}

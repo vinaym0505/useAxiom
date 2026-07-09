@@ -1,4 +1,5 @@
 import { BaseAgent } from '../agent.base';
+import { ASSIGNMENT_SYSTEM_PROMPT } from '../prompts';
 
 export interface AssignerInput {
   tasks: Array<{ id: string; name: string; requiredSkills?: string[] }>;
@@ -41,9 +42,7 @@ export class AssignmentAgent extends BaseAgent {
     const messages = [
       {
         role: 'system' as const,
-        content:
-          this.systemPrompt ||
-          'You are useAxiom\'s Task Assignment Agent. Match tasks to team members based on their workload, capacity, and matching technical skills. Provide a clear logical rationale for every match.'
+        content: this.systemPrompt || ASSIGNMENT_SYSTEM_PROMPT
       },
       {
         role: 'user' as const,

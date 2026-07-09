@@ -1,0 +1,24 @@
+"use strict";
+Object.defineProperty(exports, "__esModule", { value: true });
+exports.FlagProjectAtRiskTool = void 0;
+class FlagProjectAtRiskTool {
+    flagProjectFn;
+    name = 'flag_project_at_risk';
+    description = 'Flag a project as high risk on the manager dashboard and specify reasoning.';
+    parameters = {
+        type: 'object',
+        properties: {
+            projectId: { type: 'string', description: 'The unique identifier of the project.' },
+            riskScore: { type: 'number', description: 'The risk percentage score (0-100).' },
+            reasoning: { type: 'string', description: 'The details or reasoning explaining the risk level.' }
+        },
+        required: ['projectId', 'riskScore', 'reasoning']
+    };
+    constructor(flagProjectFn) {
+        this.flagProjectFn = flagProjectFn;
+    }
+    async execute(args) {
+        return this.flagProjectFn(args.projectId, args.riskScore, args.reasoning);
+    }
+}
+exports.FlagProjectAtRiskTool = FlagProjectAtRiskTool;

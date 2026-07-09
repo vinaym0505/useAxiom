@@ -188,4 +188,8 @@ export class MockLlmProvider implements ILlmProvider {
       ]
     } as unknown as T;
   }
+
+  async generateEmbedding(text: string): Promise<number[]> {
+    return Array(1536).fill(0).map(() => Math.random());
+  }
 }

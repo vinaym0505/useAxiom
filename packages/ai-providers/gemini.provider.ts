@@ -130,4 +130,12 @@ export class GeminiProvider implements ILlmProvider {
 
     return JSON.parse(text) as T;
   }
+
+  async generateEmbedding(text: string): Promise<number[]> {
+    const response = await this.client.models.embedContent({
+      model: 'text-embedding-004',
+      contents: [text],
+    });
+    return response.embeddings?.[0]?.values || [];
+  }
 }

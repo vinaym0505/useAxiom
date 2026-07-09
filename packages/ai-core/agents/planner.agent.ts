@@ -1,4 +1,5 @@
 import { BaseAgent } from '../agent.base';
+import { PLANNER_SYSTEM_PROMPT } from '../prompts';
 
 export interface MilestoneTask {
   name: string;
@@ -54,7 +55,12 @@ const plannerJsonSchema = {
 };
 
 export class PlannerAgent extends BaseAgent {
-  async run(input: { objective: string; targetDeadline?: string }): Promise<ProjectPlanResponse> {
+  async run(input: { 
+    objective: string; 
+    targetDeadline?: string;
+    previousPlan?: ProjectPlanResponse;
+    feedback?: string;
+  }): Promise<ProjectPlanResponse> {
     const historicalContext = await this.memory.getLongTermContext(input.objective);
     const contextPrompt =
       historicalContext.length > 0
@@ -65,9 +71,11 @@ export class PlannerAgent extends BaseAgent {
       {
         role: 'system' as const,
         content:
-          (this.systemPrompt ||
-            'You are useAxiom\'s AI Project Planner. Break down the user\'s objective into a clean list of chronological milestones, and map concrete execution tasks with estimated hours and a list of required technical skills for each task. Be realistic and pragmatic.') +
-          contextPrompt
+          (this.systemPrompt || PLANNER_SYSTEM_PROMPT) +
+          contextPrompt +
+          (input.feedback && input.previousPlan
+            ? `\n\nCRITICAL: Your previous plan was rejected by the Risk Assessor. You must revise it based on this feedback:\n"${input.feedback}"\n\nPrevious Plan:\n${JSON.stringify(input.previousPlan)}`
+            : '')
       },
       {
         role: 'user' as const,

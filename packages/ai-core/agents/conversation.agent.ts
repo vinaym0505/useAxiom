@@ -1,4 +1,5 @@
 import { BaseAgent } from '../agent.base';
+import { CONVERSATION_SYSTEM_PROMPT } from '../prompts';
 
 export interface ConversationInput {
   threadId: string;
@@ -50,9 +51,7 @@ export class ConversationAgent extends BaseAgent {
     const messages = [
       {
         role: 'system' as const,
-        content:
-          this.systemPrompt ||
-          'You are useAxiom\'s Conversation parsing agent. Read the WhatsApp message from the employee, determine their execution update intent, assign a confidence score, extract parameters if they are blocked or delayed, and write a helpful natural response.'
+        content: this.systemPrompt || CONVERSATION_SYSTEM_PROMPT
       },
       ...historyMessages,
       {

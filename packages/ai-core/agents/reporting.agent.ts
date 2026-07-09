@@ -1,4 +1,5 @@
 import { BaseAgent } from '../agent.base';
+import { REPORTING_SYSTEM_PROMPT } from '../prompts';
 
 export interface ReportingInput {
   projectId: string;
@@ -32,9 +33,7 @@ export class ReportingAgent extends BaseAgent {
     const messages = [
       {
         role: 'system' as const,
-        content:
-          this.systemPrompt ||
-          'You are useAxiom\'s Risk & Reporting Agent. Analyze the project execution state, compute a risk percentage score (0-100), determine the risk level, explain your logic, and list actionable suggestions for the manager dashboard.'
+        content: this.systemPrompt || REPORTING_SYSTEM_PROMPT
       },
       {
         role: 'user' as const,
